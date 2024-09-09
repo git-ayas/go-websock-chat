@@ -1,0 +1,19 @@
+<section id="chatbox">
+    <div id="messages" class="overflow-auto pico-background-orange-800">
+        <ul id="message-list" style="list-style: none;">
+            
+
+        </ul>
+
+    </div>
+    <div id="chat-input">
+        <form hx-on::after-request="this.reset()" hx-ext="ws" ws-connect="/relay/chatroom">
+            <input type="hidden" name="sender" value="{{.Sender}}">
+            <fieldset role="group">
+                <textarea name="message" placeholder="Write your message here..." aria-label="Message Content"></textarea>
+                <input ws-send type="submit" />
+            </fieldset>
+        </form>
+
+    </div>
+</section>
