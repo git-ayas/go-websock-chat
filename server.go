@@ -15,6 +15,7 @@ import (
 var host, port = flag.String("host", "192.168.1.14", "Name of host"), flag.Int("port", 3174, "Port to listen on")
 
 func main() {
+	flag.Parse()
 	app := fiber.New(fiber.Config{
 		Views: html.New("./views", ".html"),
 	})

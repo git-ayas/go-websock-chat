@@ -1,19 +1,17 @@
 <section id="chatbox">
-    <div id="messages" class="overflow-auto pico-background-orange-800">
-        <ul id="message-list" style="list-style: none;">
-            
-
+    <h5>Hello {{.Sender}}</h5>
+    <div id="messages" class="overflow-auto pico-background-indigo-900">
+        <ul id="message-list" style="list-style-type: none; padding: 0; margin: 0;">
         </ul>
-
     </div>
     <div id="chat-input">
-        <form hx-on::after-request="this.reset()" hx-ext="ws" ws-connect="/relay/chatroom">
+        <form hx-on:htmx:ws-after-send="this.reset()" hx-ext="ws" ws-connect="/relay/chatroom">
             <input type="hidden" name="sender" value="{{.Sender}}">
             <fieldset role="group">
-                <textarea name="message" placeholder="Write your message here..." aria-label="Message Content"></textarea>
+                <textarea name="message" placeholder="Write your message here..."
+                    aria-label="Message Content"></textarea>
                 <input ws-send type="submit" />
             </fieldset>
         </form>
-
     </div>
 </section>

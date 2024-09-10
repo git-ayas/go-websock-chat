@@ -1,6 +1,13 @@
-<li hx-swap-oob="beforeend:#message-list">
-    <details open>
-        <summary>{{.Sender}}</summary>
-        <p>{{.Content}}</p>
-    </details>
-</li>
+<ul hx-swap-oob="beforeend:#message-list">
+    <li style="margin: 0.5rem 0.5rem; list-style-type: none;">
+        <details open>
+            <summary class="pico-background-jade-550" style="margin-bottom: 0; border-radius: 0.3rem 1rem 0.3rem 0.3rem;"
+                role="button">
+                {{.Sender}}</summary>
+            <p class="pico-background-cyan-350"
+                style="padding: 0.5rem; border-radius: 0 0 1rem 1rem; min-height: 5vh;">
+                {{.Content}}
+            </p>
+        </details>
+    </li>
+</ul>
