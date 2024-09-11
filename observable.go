@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"
@@ -28,8 +29,13 @@ type MessageObservable struct {
 // Its suppoosed to spell broker,but I like the typo more than being accurate.
 func (m *MessageObservable) Borker() {
 	observerCount := len(m.observers)
-	ticker := time.Tick(1 * time.Second)
+	ticker := time.Tick(8 * time.Second)
 	allowDebouncedStatusLog := true
+	file, fileerr := os.OpenFile("observable.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if fileerr != nil {
+		log.Fatalln("Error opening observable.log file:", fileerr)
+	}
+	defer file.Close()
 	for {
 		select {
 		case message := <-m.messageChan:
@@ -43,6 +49,13 @@ func (m *MessageObservable) Borker() {
 			// Write out messages to all observers
 			for _, observer := range m.observers {
 				observer.connection.WriteMessage(1, processedOut)
+				_, err := file.WriteString(fmt.Sprintf(
+					"Sender: %s, Message: %s, target: %s \n",
+					message.sender,
+					message.message,
+					observer.id,
+				))
+				file.Sync()
 			}
 		case <-m.terminateObs:
 			fmt.Println("Terminating messaging observable")

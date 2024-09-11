@@ -12,10 +12,18 @@ import (
 	"github.com/goombaio/namegenerator"
 )
 
-var host, port = flag.String("host", "192.168.1.14", "Name of host"), flag.Int("port", 3174, "Port to listen on")
+var host, port = flag.String("host", "192.168.1.17", "Name of host"), flag.Int("port", 3174, "Port to listen on")
+var ChatroomObservable = MessageObservable{
+	observers:    []ObserverEntry{},
+	messageChan:  make(chan MessageData),
+	unsubChan:    make(chan ObserverEntry),
+	subChan:      make(chan ObserverEntry),
+	terminateObs: make(chan int),
+}
 
 func main() {
 	flag.Parse()
+	go ChatroomObservable.Borker()
 	app := fiber.New(fiber.Config{
 		Views: html.New("./views", ".html"),
 	})
@@ -71,6 +79,43 @@ func main() {
 		}
 	}))
 
+	app.Use("/relay/chatroom2", websocket.New(func(c *websocket.Conn) {
+
+		ChatroomObservable.Subscribe(ObserverEntry{id: "1", connection: c})
+		defer ChatroomObservable.Unsubscribe(ObserverEntry{id: "1", connection: c})
+
+		var (
+			messageType int
+			msg         []byte
+			err         error
+		)
+		for {
+			if messageType, msg, err = c.ReadMessage(); err != nil {
+				log.Println("read:", err)
+				break
+			}
+			log.Printf("recv: %s on mt: %d", msg, messageType)
+
+			parsedJsonRequest, err := UnmarshaledJsonFromByteArray[struct {
+				Sender  string
+				Message string
+			}](msg)
+
+			if err != nil {
+				log.Println("Failed to parse request data", err)
+			}
+
+			log.Printf("Parsed Request on chatroom2: %v %v \n", parsedJsonRequest.Sender, parsedJsonRequest.Message)
+
+			producerMessage := MessageData{
+				sender:  parsedJsonRequest.Sender,
+				message: parsedJsonRequest.Message,
+			}
+			ChatroomObservable.Produce(producerMessage)
+
+		}
+
+	}))
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.Render("pages/index", fiber.Map{
 			"Title":  "Home: Le Chat Room",
