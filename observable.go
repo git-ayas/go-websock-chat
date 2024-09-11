@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -27,6 +28,8 @@ type MessageObservable struct {
 // Its suppoosed to spell broker,but I like the typo more than being accurate.
 func (m *MessageObservable) Borker() {
 	observerCount := len(m.observers)
+	ticker := time.Tick(1 * time.Second)
+	allowDebouncedStatusLog := true
 	for {
 		select {
 		case message := <-m.messageChan:
@@ -54,17 +57,22 @@ func (m *MessageObservable) Borker() {
 					log.Printf("🐶: Subscriber disconnected 🐕<whimpers>")
 				}
 			}
+		case <-ticker:
+			allowDebouncedStatusLog = true
 
 		default:
 			if len(m.observers) > observerCount {
 				log.Printf("\n🐶: Woof! %d new subscriber/s 🐕 \n", len(m.observers)-observerCount)
 				observerCount = len(m.observers)
 			}
-			if observerCount < 1 {
-				log.Println("🐶: No subscribers. Doggo sad :(")
+			if allowDebouncedStatusLog {
+				if observerCount < 1 {
+					log.Println("🐶: No subscribers. Doggo sad :(")
 
-			} else {
-				log.Printf("🐶: %d subscribers connected 🐕<wags>", observerCount)
+				} else {
+					log.Printf("🐶: %d subscribers connected 🐕<wags>", observerCount)
+				}
+				allowDebouncedStatusLog = false
 			}
 
 		}
