@@ -20,6 +20,7 @@ type MessageObservable struct {
 	observers    []ObserverEntry
 	messageChan  chan MessageData
 	unsubChan    chan ObserverEntry
+	subChan      chan ObserverEntry
 	terminateObs chan int
 }
 
@@ -43,6 +44,17 @@ func (m *MessageObservable) Borker() {
 		case <-m.terminateObs:
 			fmt.Println("Terminating messaging observable")
 			return
+		case subscriber := <-m.subChan:
+			m.observers = append(m.observers, subscriber)
+			log.Printf("🐶: New subscriber connected 🐕<wags!>")
+		case subscriber := <-m.unsubChan:
+			for i, observer := range m.observers {
+				if observer.id == subscriber.id {
+					m.observers = append(m.observers[:i], m.observers[i+1:]...)
+					log.Printf("🐶: Subscriber disconnected 🐕<whimpers>")
+				}
+			}
+
 		default:
 			if len(m.observers) > observerCount {
 				log.Printf("\n🐶: Woof! %d new subscriber/s 🐕 \n", len(m.observers)-observerCount)
@@ -61,12 +73,17 @@ func (m *MessageObservable) Borker() {
 }
 
 func (m *MessageObservable) Produce(message MessageData) {
+	m.messageChan <- message
 
 }
 
 func (m *MessageObservable) Subscribe(subscriber ObserverEntry) {
 
+	m.subChan <- subscriber
+
 }
 func (m *MessageObservable) Unsubscribe(subscriber ObserverEntry) {
+
+	m.unsubChan <- subscriber
 
 }
