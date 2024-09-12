@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"
@@ -13,17 +14,21 @@ import (
 )
 
 var host, port = flag.String("host", "192.168.1.17", "Name of host"), flag.Int("port", 3174, "Port to listen on")
-var ChatroomObservable = MessageObservable{
-	observers:    []ObserverEntry{},
-	messageChan:  make(chan MessageData),
-	unsubChan:    make(chan ObserverEntry),
-	subChan:      make(chan ObserverEntry),
-	terminateObs: make(chan int),
-}
 
 func main() {
 	flag.Parse()
-	go ChatroomObservable.Borker()
+	var logger *log.Logger
+	var logfile, logfileerr = os.OpenFile("observable.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if logfileerr != nil {
+		log.Println("Error opening observable.log file:", logfileerr)
+		logger = log.New(os.Stdout, "[borker stdout]", log.LstdFlags)
+	} else {
+		defer logfile.Close()
+		logger = log.New(logfile, "[borker]", log.LstdFlags)
+	}
+	var ChatroomPool = NewMessageObservable(logger)
+	go ChatroomPool.Borker()
 	app := fiber.New(fiber.Config{
 		Views: html.New("./views", ".html"),
 	})
@@ -81,8 +86,9 @@ func main() {
 
 	app.Use("/relay/chatroom2", websocket.New(func(c *websocket.Conn) {
 
-		ChatroomObservable.Subscribe(ObserverEntry{id: "1", connection: c})
-		defer ChatroomObservable.Unsubscribe(ObserverEntry{id: "1", connection: c})
+		timeOfConnection := time.Now().String()
+		ChatroomPool.SubscriberChannel <- ObserverEntry{id: timeOfConnection, connection: c}
+		defer ChatroomPool.Unsubscribe(ObserverEntry{id: timeOfConnection, connection: c})
 
 		var (
 			messageType int
@@ -94,7 +100,7 @@ func main() {
 				log.Println("read:", err)
 				break
 			}
-			log.Printf("recv: %s on mt: %d", msg, messageType)
+			log.Printf("recv: %s on mt: %d, observerCount %v", msg, messageType, len(ChatroomPool.observers))
 
 			parsedJsonRequest, err := UnmarshaledJsonFromByteArray[struct {
 				Sender  string
@@ -107,11 +113,10 @@ func main() {
 
 			log.Printf("Parsed Request on chatroom2: %v %v \n", parsedJsonRequest.Sender, parsedJsonRequest.Message)
 
-			producerMessage := MessageData{
+			ChatroomPool.MessagesChannel <- MessageData{
 				sender:  parsedJsonRequest.Sender,
 				message: parsedJsonRequest.Message,
 			}
-			ChatroomObservable.Produce(producerMessage)
 
 		}
 
