@@ -67,7 +67,7 @@ func (m *MessageObservable) Borker() {
 			for i, observer := range m.observers {
 				if observer.id == subscriber.id {
 					m.observers = append(m.observers[:i], m.observers[i+1:]...)
-					m.logger.Printf("Subscriber left <sad borker noises>")
+					m.logger.Printf("Subscriber left 🐕<sad borker noises>")
 				}
 			}
 			m.mu.Unlock()
@@ -78,14 +78,14 @@ func (m *MessageObservable) Borker() {
 			if allowDebouncedStatusLog {
 				m.mu.Lock()
 				if len(m.observers) > observerCount {
-					m.logger.Printf("\n Woof! %d new subscriber/s 🐕 \n", len(m.observers)-observerCount)
+					m.logger.Printf("Woof! %d new subscriber/s 🐕<chases tail wildly> \n", len(m.observers)-observerCount)
 					observerCount = len(m.observers)
 				}
 				if observerCount < 1 {
-					m.logger.Printf("No subscribers. Lonely Borker :(")
+					m.logger.Printf("No subscribers connected. 🐕<borker lonely :( > \n")
 
 				} else {
-					m.logger.Printf("%d subscribers connected 🐕<tail wags>", observerCount)
+					m.logger.Printf("%d subscribers connected. 🐕<tail wags>", observerCount)
 				}
 				allowDebouncedStatusLog = false
 				m.mu.Unlock()
