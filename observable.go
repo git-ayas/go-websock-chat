@@ -47,6 +47,7 @@ func (m *MessageObservable) Borker() {
 			// Write out messages to all observers
 			for _, observer := range m.observers {
 				observer.connection.WriteMessage(1, processedOut)
+				m.logger.Printf("🐶: Sending data(%v) to %s  ", message, observer.id)
 			}
 			m.mu.Unlock()
 		case <-m.terminateObs:
@@ -62,7 +63,7 @@ func (m *MessageObservable) Borker() {
 			for i, observer := range m.observers {
 				if observer.id == subscriber.id {
 					m.observers = append(m.observers[:i], m.observers[i+1:]...)
-					m.logger.Printf("🐶: Subscriber disconnected 🐕<whimpers>")
+					m.logger.Printf("🐶: Subscriber disconnected <droops sadly>")
 				}
 			}
 			m.mu.Unlock()
@@ -104,6 +105,9 @@ func (m *MessageObservable) Unsubscribe(subscriber ObserverEntry) {
 
 	m.UnsubscribeChannel <- subscriber
 
+}
+func (m *MessageObservable) Terminate() {
+	m.terminateObs <- 1
 }
 
 func NewMessageObservable(logger *log.Logger) *MessageObservable {

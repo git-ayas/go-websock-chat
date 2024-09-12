@@ -22,10 +22,10 @@ func main() {
 
 	if logfileerr != nil {
 		log.Println("Error opening observable.log file:", logfileerr)
-		logger = log.New(os.Stdout, "[borker stdout]", log.LstdFlags)
+		logger = log.New(os.Stdout, "[🐶: stdout]", log.LstdFlags)
 	} else {
 		defer logfile.Close()
-		logger = log.New(logfile, "[borker]", log.LstdFlags)
+		logger = log.New(logfile, "[🐶:]", log.LstdFlags)
 	}
 	var ChatroomPool = NewMessageObservable(logger)
 	go ChatroomPool.Borker()
@@ -47,45 +47,6 @@ func main() {
 	})
 
 	app.Use("/relay/chatroom", websocket.New(func(c *websocket.Conn) {
-
-		var (
-			messageType int
-			msg         []byte
-			err         error
-		)
-		for {
-			if messageType, msg, err = c.ReadMessage(); err != nil {
-				log.Println("read:", err)
-				break
-			}
-			log.Printf("recv: %s on mt: %d", msg, messageType)
-
-			parsedJsonRequest, err := UnmarshaledJsonFromByteArray[struct {
-				Sender  string
-				Message string
-			}](msg)
-
-			if err != nil {
-				log.Println("Failed to parse request data", err)
-			}
-
-			log.Printf("Parsed Request: %v %v \n", parsedJsonRequest.Sender, parsedJsonRequest.Message)
-			parsedCompomnent, err := GetParsedMessageComponent(MesageDataType{
-				Sender:  parsedJsonRequest.Sender,
-				Content: parsedJsonRequest.Message,
-			})
-			if err != nil {
-				log.Println("Failed to parse message template", err)
-			}
-			if err = c.WriteMessage(messageType, parsedCompomnent); err != nil {
-				log.Println("write:", err)
-				break
-			}
-		}
-	}))
-
-	app.Use("/relay/chatroom2", websocket.New(func(c *websocket.Conn) {
-
 		timeOfConnection := time.Now().String()
 		ChatroomPool.SubscriberChannel <- ObserverEntry{id: timeOfConnection, connection: c}
 		defer ChatroomPool.Unsubscribe(ObserverEntry{id: timeOfConnection, connection: c})
@@ -129,4 +90,5 @@ func main() {
 	})
 
 	log.Fatal(app.Listen(fmt.Sprintf("%s:%d", *host, *port)))
+	ChatroomPool.Terminate()
 }
