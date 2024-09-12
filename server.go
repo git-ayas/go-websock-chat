@@ -13,12 +13,12 @@ import (
 	"github.com/goombaio/namegenerator"
 )
 
-var host, port = flag.String("host", "192.168.1.17", "Name of host"), flag.Int("port", 3174, "Port to listen on")
+var host, port = flag.String("host", "127.0.0.1", "Host name to listen on"), flag.Int("port", 3174, "Port to listen on")
 
 func main() {
 	flag.Parse()
 	var logger *log.Logger
-	var logfile, logfileerr = os.OpenFile("observable.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	var logfile, logfileerr = os.OpenFile("borker.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if logfileerr != nil {
 		log.Println("Error opening observable.log file:", logfileerr)
